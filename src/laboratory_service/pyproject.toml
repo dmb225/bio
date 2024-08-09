@@ -1,0 +1,24 @@
+[tool.poetry]
+name = "biotest-microservices"
+version = "0.1.0"
+description = "Microservices for managing biological tests and patient data"
+authors = ["Dao Malick B. Name <daomalick225@gmail.com>"]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+fastapi = "^0.100.0"
+uvicorn = "^0.22.0"
+pydantic = "^2.3.0"
+redis = "^4.6.0"
+sqlalchemy = "^2.0.19"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.black]
+line-length = 88
+target-version = ['py311']
+
+[tool.isort]
+profile = "black"
