@@ -9,7 +9,9 @@ services:
 
   lab-service:
     build: ../src/laboratory_service
-    container_name: lab-service
+    container_name: laboratory-service
+    volumes:
+      - ../src/laboratory_service/bio_lab.db:/app/bio_lab.db
     ports:
       - "8001:8001"
     depends_on:
@@ -22,6 +24,8 @@ services:
   patient-service:
     build: ../src/patient_service
     container_name: patient-service
+    volumes:
+      - ../src/patient_service/bio.db:/app/bio.db
     ports:
       - "8002:8002"
     depends_on:

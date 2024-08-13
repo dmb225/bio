@@ -4,4 +4,7 @@
 *.idea
 
 *.env
+venv/
 __pycache__/
+
+*.diff
