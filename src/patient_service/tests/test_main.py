@@ -1,12 +1,16 @@
+import datetime
 import pytest
+from pathlib import Path
 from fastapi.testclient import TestClient
-from sqlalchemy import create_engine, text
+from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from ..database import Base, get_db
-from ..main import app
 
-# Setup for the test database
-SQLALCHEMY_DATABASE_URL = "sqlite:///./bio_test.db"
+from src.patient_service.main import app
+from src.patient_service.models import ResultModel
+from src.patient_service.core.interfaces.database import Base, get_db
+
+TEST_DB_PATH = Path(__file__).resolve().parent / "bio_patient_test.db"
+SQLALCHEMY_DATABASE_URL = f"sqlite:///{TEST_DB_PATH}"
 engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False})
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
@@ -32,28 +36,32 @@ def setup_database():
 
 
 def test_get_test_results(setup_database):
-    # Insert a test result
-    db = SessionLocal()
-    db.execute(
-        text("INSERT INTO test_results (patient_id, test_name, result_value, unit, test_date, lab_name) "
-             "VALUES (:patient_id, :test_name, :result_value, :unit, :test_date, :lab_name)"),
-        {"patient_id": 1, "test_name": "Hemoglobin", "result_value": 13.5, "unit": "g/dL",
-         "test_date": "2024-08-09T00:00:00Z", "lab_name": "Cerballiance"}
-    )
-    db.execute(
-        text("INSERT INTO test_results (patient_id, test_name, result_value, unit, test_date, lab_name) "
-             "VALUES (:patient_id, :test_name, :result_value, :unit, :test_date, :lab_name)"),
-        {"patient_id": 1, "test_name": "Hemoglobin", "result_value": 14.0, "unit": "g/dL",
-         "test_date": "2024-08-10T00:00:00Z", "lab_name": "Cerballiance"}
-    )
-    db.commit()
-    db.close()
+    patient_id = 1
+    with SessionLocal() as db:
+        db.add_all([
+            ResultModel(
+                patient_id=patient_id,
+                test_name="Hemoglobin",
+                result_value=13.5,
+                unit="g/dL",
+                result_date=datetime.datetime(year=2024, month=8, day=9),
+                lab_name="Cerballiance"
+            ),
+            ResultModel(
+                patient_id=patient_id,
+                test_name="Hemoglobin",
+                result_value=14.0,
+                unit="g/dL",
+                result_date=datetime.datetime(year=2024, month=8, day=10),
+                lab_name="Cerballiance"
+            )
+        ])
+        db.commit()
 
-    response = client.get("/test-results/1")
+    response = client.get(f"/patient/{patient_id}/results")
     payload = response.json()
 
     assert response.status_code == 200
     assert len(payload) == 2
     assert payload[0]["test_name"] == "Hemoglobin"
     assert payload[0]["result_value"] == 13.5
-

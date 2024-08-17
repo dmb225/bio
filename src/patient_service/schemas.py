@@ -7,7 +7,7 @@ class TestResult(BaseModel):
     lab_name: str
     patient_id: int
     test_name: str
-    test_date: datetime
+    result_date: datetime
     result_value: float
     unit: str
 

@@ -5,3 +5,5 @@ redis==4.6.0
 sqlalchemy==2.0.19
 pytest==8.3.2
 httpx==0.24.0
+python-dotenv==1.0.1
+google-cloud-pubsub==2.23.0

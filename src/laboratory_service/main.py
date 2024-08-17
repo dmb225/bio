@@ -1,41 +1,32 @@
-import os
-import redis
-import json
-
 from fastapi import FastAPI, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
-from schemas import TestResultCreate, TestResult
-from database import get_db
-from exceptions import DatabaseError, ValidationError
-from services import create_test_result
+from src.laboratory_service.schemas import ResultCreate, Result
+from src.laboratory_service.exceptions import DatabaseError, ValidationError
+from src.laboratory_service.core.interfaces.database import get_db
+from src.laboratory_service.core.services.database import create_result
+from src.laboratory_service.core.services.publisher import PublisherPort, get_publisher
 
 app = FastAPI()
 
-# Initialize Redis
-redis_client = redis.StrictRedis(
-    host=os.getenv("REDIS_HOST", "localhost"),
-    port=int(os.getenv("REDIS_PORT", 6379)),
-    db=int(os.getenv("REDIS_DB", 8))
-)
 
-
-@app.post("/record-test-result/", response_model=TestResult, status_code=status.HTTP_201_CREATED)
-def record_test_result(test_result: TestResultCreate, db: Session = Depends(get_db)):
+@app.post("/record_result/", response_model=Result, status_code=status.HTTP_201_CREATED)
+def record_result(
+        result_create: ResultCreate,
+        db: Session = Depends(get_db),
+        publisher: PublisherPort = Depends(get_publisher)
+):
     try:
-        result = create_test_result(db=db, test_result=test_result)
-
-        # Publish the result to the Redis channel
+        result = create_result(db=db, result_create=result_create)
         message = {
             "patient_id": result.patient_id,
             "test_name": result.test_name,
             "result_value": result.result_value,
             "unit": result.unit,
-            "test_date": result.test_date.isoformat(),
+            "result_date": result.result_date.isoformat(),
             "lab_name": result.lab_name
         }
-        print(message)
-        redis_client.publish('test_results_channel', json.dumps(message))
+        publisher.publish(message)
 
         return result
     except ValidationError as e:
